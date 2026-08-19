@@ -9,10 +9,17 @@
 <body>
   <div class="wrapper">
     <header class="topbar">
+      <input class="name-input" id="name" type="text" maxlength="20" placeholder="Your name (optional)" autocomplete="off">
+      <div class="mode-toggle" id="modeToggle">
+        <button class="btn mode-btn" data-mode="paper">Paper</button>
+        <button class="btn mode-btn" data-mode="dice">Dice</button>
+      </div>
+    </header>
+    <div class="controlbar">
       <div class="status" id="status">Tap the dice (or Roll) to start.</div>
       <button class="btn" id="rollBtn">Roll</button>
       <button class="btn" id="nextBtn" hidden>Next</button>
-    </header>
+    </div>
 
     <main id="board"></main>
 

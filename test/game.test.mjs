@@ -105,6 +105,65 @@ test('penalties are capped and the fourth ends the game', () => {
   assert.equal(g.penalties, MAX_PENALTIES);
 });
 
+test('uncross removes a cross and allows re-crossing', () => {
+  const g = new Game();
+  assert.equal(g.cross('red', 5), true);
+  assert.equal(g.uncross('red', 5), true);
+  assert.equal(g.isCrossed('red', g.indexOf('red', 5)), false);
+  assert.equal(g.uncross('red', 5), false);
+  assert.equal(g.cross('red', 5), true);
+});
+
+test('uncrossing the last number unlocks the row', () => {
+  const g = new Game();
+  for (const v of [2, 3, 4, 5, 6]) g.cross('red', v);
+  g.cross('red', 12);
+  assert.equal(g.locked.has('red'), true);
+  assert.equal(g.uncross('red', 12), true);
+  assert.equal(g.locked.has('red'), false);
+  assert.equal(g.isCrossed('red', 11), false);
+  assert.equal(g.canCross('red', 7), true);
+});
+
+test('uncrossing a lock number recomputes the end of game', () => {
+  const g = new Game();
+  for (const v of [2, 3, 4, 5, 6]) g.cross('red', v);
+  g.cross('red', 12);
+  for (const v of [2, 3, 4, 5, 6]) g.cross('yellow', v);
+  g.cross('yellow', 12);
+  assert.equal(g.over, true);
+  assert.equal(g.uncross('yellow', 12), true);
+  assert.equal(g.over, false);
+});
+
+test('removePenalty undoes a penalty and recomputes the end of game', () => {
+  const g = new Game();
+  for (let i = 0; i < MAX_PENALTIES; i++) g.addPenalty();
+  assert.equal(g.over, true);
+  assert.equal(g.removePenalty(), true);
+  assert.equal(g.penalties, MAX_PENALTIES - 1);
+  assert.equal(g.over, false);
+  assert.equal(g.removePenalty(), true);
+  assert.equal(g.removePenalty(), true);
+  assert.equal(g.removePenalty(), true);
+  assert.equal(g.removePenalty(), false);
+  assert.equal(g.penalties, 0);
+});
+
+test('non-strict games stay editable after the end condition', () => {
+  const g = new Game();
+  g.strict = false;
+  for (let i = 0; i < MAX_PENALTIES; i++) g.addPenalty();
+  assert.equal(g.over, true);
+  assert.equal(g.cross('red', 5), true);
+  assert.equal(g.uncross('red', 5), true);
+  assert.equal(g.removePenalty(), true);
+  assert.equal(g.over, false);
+  assert.equal(g.addPenalty(), true);
+  assert.equal(g.over, true);
+  assert.equal(g.addPenalty(), false);
+});
+
 test('scoring: triangular rows minus five per penalty', () => {
   const g = new Game();
   for (const v of [2, 3, 4]) assert.equal(g.cross('red', v), true);

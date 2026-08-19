@@ -1,6 +1,8 @@
 import { Game, Turn, ROWS, COLORS } from './game.mjs';
 
 const HS_KEY = 'qwixx_highscore';
+const NAME_KEY = 'qwixx_name';
+const MODE_KEY = 'qwixx_mode';
 const DICE_IDS = ['w1', 'w2', 'red', 'yellow', 'green', 'blue'];
 
 const $ = (sel) => document.querySelector(sel);
@@ -11,6 +13,8 @@ const rollBtn = $('#rollBtn');
 const nextBtn = $('#nextBtn');
 const newBtn = $('#newBtn');
 const highscoreBtn = $('#highscoreBtn');
+const nameInput = $('#name');
+const modeToggle = $('#modeToggle');
 const overlay = $('#overlay');
 const dialogTitle = $('#dialogTitle');
 const dialogBody = $('#dialogBody');
@@ -28,6 +32,8 @@ const store = {
 
 let game;
 let turn;
+let mode = store.get(MODE_KEY) === 'dice' ? 'dice' : 'paper';
+let hsRecorded = false;
 let notice = null;
 const cells = {};
 const lockCells = {};
@@ -123,11 +129,29 @@ function renderDice() {
   }
 }
 
+function renderMode() {
+  document.body.classList.toggle('paper-mode', mode === 'paper');
+  for (const btn of modeToggle.querySelectorAll('.mode-btn')) {
+    btn.classList.toggle('active', btn.dataset.mode === mode);
+  }
+  dicesEl.hidden = mode === 'paper';
+  game.strict = mode === 'dice';
+  if (mode === 'paper') turn.phase = 'idle';
+}
+
 function renderStatus() {
+  const msg = notice;
+  notice = null;
+  if (mode === 'paper') {
+    statusEl.textContent = msg || 'Paper score sheet — cross numbers as you play with real dice.';
+    rollBtn.hidden = true;
+    nextBtn.hidden = true;
+    return;
+  }
+  rollBtn.hidden = false;
   rollBtn.disabled = game.over || turn.phase !== 'idle';
-  if (notice) {
-    statusEl.textContent = notice;
-    notice = null;
+  if (msg) {
+    statusEl.textContent = msg;
   } else if (game.over) {
     statusEl.textContent = 'Game over!';
   } else if (turn.phase === 'idle') {
@@ -156,6 +180,7 @@ function renderStatus() {
 }
 
 function render() {
+  renderMode();
   renderBoard();
   renderDice();
   renderStatus();
@@ -215,17 +240,60 @@ function onLockClick(color, el) {
   shake(el);
 }
 
+function onCellToggle(color, value, el) {
+  const i = game.indexOf(color, value);
+  const ok = game.isCrossed(color, i) ? game.uncross(color, value) : game.cross(color, value);
+  if (ok) {
+    maybeRecordHighscore();
+    render();
+  } else {
+    shake(el);
+  }
+}
+
+function onLockToggle(color, el) {
+  onCellToggle(color, lockTarget(color), el);
+}
+
+function onPenaltyClick(el) {
+  const i = Number(el.dataset.penalty);
+  let ok;
+  if (i === game.penalties) ok = game.addPenalty();
+  else if (i === game.penalties - 1) ok = game.removePenalty();
+  else ok = false;
+  if (ok) {
+    maybeRecordHighscore();
+    render();
+  } else {
+    shake(el);
+  }
+}
+
 function shake(el) {
   el.classList.remove('shake');
   void el.offsetWidth;
   el.classList.add('shake');
 }
 
-function endGame() {
+function maybeRecordHighscore() {
+  if (!game.over || hsRecorded) return;
+  hsRecorded = true;
   const s = game.score();
   const best = Math.max(Number(store.get(HS_KEY) || 0), s.total);
   store.set(HS_KEY, String(best));
-  showDialog('Game over', `Final score: ${s.total}. Best score: ${best}.`);
+  const name = (store.get(NAME_KEY) || '').trim();
+  const who = name ? `${name}: ` : '';
+  notice = `Game over — ${who}score ${s.total}. Best score: ${best}.`;
+}
+
+function endGame() {
+  hsRecorded = true;
+  const s = game.score();
+  const best = Math.max(Number(store.get(HS_KEY) || 0), s.total);
+  store.set(HS_KEY, String(best));
+  const name = (store.get(NAME_KEY) || '').trim();
+  const who = name ? `${name}: ` : '';
+  showDialog('Game over', `${who}Final score: ${s.total}. Best score: ${best}.`);
   render();
 }
 
@@ -238,14 +306,23 @@ function showDialog(title, body) {
 function newGame() {
   game = new Game();
   turn = new Turn();
+  game.strict = mode === 'dice';
+  hsRecorded = false;
   notice = null;
   overlay.hidden = true;
   render();
 }
 
 board.addEventListener('click', (e) => {
-  const el = e.target.closest('.field');
+  const el = e.target.closest('.field, .failure');
   if (!el) return;
+  if (mode === 'paper') {
+    if (el.dataset.penalty !== undefined) onPenaltyClick(el);
+    else if (el.dataset.lock) onLockToggle(el.dataset.color, el);
+    else onCellToggle(el.dataset.color, Number(el.dataset.value), el);
+    return;
+  }
+  if (el.dataset.penalty !== undefined) return;
   const color = el.dataset.color;
   if (el.dataset.lock) onLockClick(color, el);
   else onCellClick(color, Number(el.dataset.value), el);
@@ -255,12 +332,22 @@ dicesEl.addEventListener('click', doRoll);
 rollBtn.addEventListener('click', doRoll);
 nextBtn.addEventListener('click', doNext);
 newBtn.addEventListener('click', newGame);
+modeToggle.addEventListener('click', (e) => {
+  const btn = e.target.closest('.mode-btn');
+  if (!btn || btn.dataset.mode === mode) return;
+  mode = btn.dataset.mode;
+  store.set(MODE_KEY, mode);
+  notice = null;
+  render();
+});
+nameInput.addEventListener('input', () => store.set(NAME_KEY, nameInput.value));
 highscoreBtn.addEventListener('click', () => {
   showDialog('Highscore', `Best score: ${store.get(HS_KEY) || 0}.`);
 });
 dialogOk.addEventListener('click', () => { overlay.hidden = true; });
 dialogNew.addEventListener('click', newGame);
 
+nameInput.value = store.get(NAME_KEY) || '';
 buildBoard();
 buildDice();
 newGame();

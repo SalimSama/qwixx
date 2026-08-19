@@ -17,6 +17,12 @@ export class Game {
     this.locked = new Set();
     this.penalties = 0;
     this.over = false;
+    this.strict = true;
+  }
+
+  refreshOver() {
+    this.over = this.locked.size >= 2 || this.penalties >= MAX_PENALTIES;
+    return this.over;
   }
 
   indexOf(color, value) {
@@ -32,7 +38,7 @@ export class Game {
   }
 
   canCross(color, value) {
-    if (this.over || this.locked.has(color)) return false;
+    if ((this.over && this.strict) || this.locked.has(color)) return false;
     const i = this.indexOf(color, value);
     if (i < 0 || this.crossed[color].has(i)) return false;
     if (i === LAST) return this.countInRow(color) >= CROSSES_TO_LOCK;
@@ -42,6 +48,11 @@ export class Game {
     return true;
   }
 
+  canUncross(color, value) {
+    const i = this.indexOf(color, value);
+    return i >= 0 && this.crossed[color].has(i);
+  }
+
   cross(color, value) {
     if (!this.canCross(color, value)) return false;
     const i = this.indexOf(color, value);
@@ -49,15 +60,35 @@ export class Game {
     if (i === LAST) {
       this.crossed[color].add(LAST + 1);
       this.locked.add(color);
-      if (this.locked.size >= 2) this.over = true;
+      this.refreshOver();
     }
     return true;
   }
 
+  uncross(color, value) {
+    if (!this.canUncross(color, value)) return false;
+    const i = this.indexOf(color, value);
+    this.crossed[color].delete(i);
+    if (i === LAST) {
+      this.crossed[color].delete(LAST + 1);
+      this.locked.delete(color);
+    }
+    this.refreshOver();
+    return true;
+  }
+
   addPenalty() {
-    if (this.over || this.penalties >= MAX_PENALTIES) return false;
+    if (this.over && this.strict) return false;
+    if (this.penalties >= MAX_PENALTIES) return false;
     this.penalties += 1;
-    if (this.penalties >= MAX_PENALTIES) this.over = true;
+    this.refreshOver();
+    return true;
+  }
+
+  removePenalty() {
+    if (this.penalties <= 0) return false;
+    this.penalties -= 1;
+    this.refreshOver();
     return true;
   }
 

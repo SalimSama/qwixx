@@ -13,6 +13,10 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+[hidden] {
+  display: none !important;
+}
+
 body {
   background: #dddddf;
   font-family: system-ui, -apple-system, sans-serif;
@@ -25,6 +29,39 @@ body {
 }
 
 .topbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.name-input {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid #bbb;
+  border-radius: 6px;
+  background: #fff;
+  padding: 8px 10px;
+  font-size: 14px;
+}
+
+.mode-toggle {
+  display: flex;
+  gap: 4px;
+}
+
+.mode-btn {
+  padding: 6px 12px;
+  font-size: 13px;
+}
+
+.mode-btn.active {
+  background: #333;
+  color: #fff;
+  border-color: #333;
+}
+
+.controlbar {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -178,6 +215,11 @@ body {
 .failure.crossed {
   color: #000;
   background: #eee;
+}
+
+.paper-mode .field,
+.paper-mode .failure {
+  cursor: pointer;
 }
 
 .total-label {
