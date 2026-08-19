@@ -3,7 +3,67 @@ import { Game, Turn, ROWS, COLORS } from './game.mjs';
 const HS_KEY = 'qwixx_highscore';
 const NAME_KEY = 'qwixx_name';
 const MODE_KEY = 'qwixx_mode';
+const LANG_KEY = 'qwixx_lang';
 const DICE_IDS = ['w1', 'w2', 'red', 'yellow', 'green', 'blue'];
+
+const I18N = {
+  en: {
+    namePlaceholder: 'Your name (optional)',
+    modePaper: 'Paper',
+    modeDice: 'Dice',
+    roll: 'Roll',
+    skipWhite: 'Skip white',
+    endTurnBtn: 'End turn',
+    statusPaper: 'Paper score sheet — cross numbers as you play with real dice.',
+    statusIdle: 'Tap the dice (or Roll) to start the turn.',
+    statusWhite: (w1, w2, sum) =>
+      `White dice ${w1} + ${w2} = ${sum}. Tap a highlighted number in any row to cross it, or skip.`,
+    statusColored: (options) =>
+      `Colored action — ${options}. Tap a highlighted number, or end your turn.`,
+    gameOver: 'Game over!',
+    noCross: 'No number crossed this turn — one penalty box marked.',
+    turnEnded: 'Turn ended.',
+    total: 'Total',
+    closedByOther: 'Closed by another player',
+    highscoreTitle: 'Highscore',
+    newGameTitle: 'New game',
+    gameOverTitle: 'Game over',
+    ok: 'OK',
+    newGame: 'New game',
+    endScore: (who, total, best) => `Game over — ${who}score ${total}. Best score: ${best}.`,
+    finalScore: (who, total, best) => `${who}Final score: ${total}. Best score: ${best}.`,
+    bestScore: (best) => `Best score: ${best}.`,
+    switchLang: 'Switch to German',
+  },
+  de: {
+    namePlaceholder: 'Dein Name (optional)',
+    modePaper: 'Papier',
+    modeDice: 'Würfel',
+    roll: 'Würfeln',
+    skipWhite: 'Weiß überspringen',
+    endTurnBtn: 'Zug beenden',
+    statusPaper: 'Papier-Spielzettel — kreuze Zahlen an, während du mit echten Würfeln spielst.',
+    statusIdle: 'Tippe auf die Würfel (oder Würfeln), um den Zug zu starten.',
+    statusWhite: (w1, w2, sum) =>
+      `Weiße Würfel ${w1} + ${w2} = ${sum}. Tippe auf eine markierte Zahl in einer beliebigen Reihe, um sie anzukreuzen, oder überspringe sie.`,
+    statusColored: (options) =>
+      `Farbaktion — ${options}. Tippe auf eine markierte Zahl oder beende deinen Zug.`,
+    gameOver: 'Spiel beendet!',
+    noCross: 'Keine Zahl angekreuzt — ein Minusfeld wurde markiert.',
+    turnEnded: 'Zug beendet.',
+    total: 'Gesamt',
+    closedByOther: 'Von einem anderen Spieler geschlossen',
+    highscoreTitle: 'Bestwert',
+    newGameTitle: 'Neues Spiel',
+    gameOverTitle: 'Spiel beendet',
+    ok: 'OK',
+    newGame: 'Neues Spiel',
+    endScore: (who, total, best) => `Spiel beendet — ${who}${total} Punkte. Bestwert: ${best}.`,
+    finalScore: (who, total, best) => `${who}Endstand: ${total} Punkte. Bestwert: ${best}.`,
+    bestScore: (best) => `Bestwert: ${best}.`,
+    switchLang: 'Switch to English',
+  },
+};
 
 const $ = (sel) => document.querySelector(sel);
 const board = $('#board');
@@ -20,6 +80,7 @@ const dialogTitle = $('#dialogTitle');
 const dialogBody = $('#dialogBody');
 const dialogOk = $('#dialogOk');
 const dialogNew = $('#dialogNew');
+const langBtn = $('#langBtn');
 
 const store = {
   get: (k) => {
@@ -33,8 +94,13 @@ const store = {
 let game;
 let turn;
 let mode = store.get(MODE_KEY) === 'dice' ? 'dice' : 'paper';
+let lang = store.get(LANG_KEY) === 'de' ? 'de' : 'en';
 let hsRecorded = false;
 let notice = null;
+const t = (key, ...args) => {
+  const v = I18N[lang][key];
+  return typeof v === 'function' ? v(...args) : v;
+};
 const cells = {};
 const lockCells = {};
 const closedEls = {};
@@ -51,12 +117,12 @@ function boardHTML() {
     }
     html += `<div class="field lock-field" data-color="${color}" data-lock="1"><span class="cross">X</span></div>`;
     html += `<div class="rowscore" data-score="${color}">0</div>`;
-    html += `<label class="closed-check" title="Closed by another player"><input type="checkbox" data-closed="${color}"></label>`;
+    html += `<label class="closed-check" title="${t('closedByOther')}"><input type="checkbox" data-closed="${color}"></label>`;
     html += '</div>';
   }
   html += '<div class="row penalties">';
   for (let i = 0; i < 4; i++) html += `<div class="failure" data-penalty="${i}">X</div>`;
-  html += '<div class="total-label">Total</div><div class="total-value" data-total>0</div>';
+  html += `<div class="total-label">${t('total')}</div><div class="total-value" data-total>0</div>`;
   html += '</div>';
   return html;
 }
@@ -134,6 +200,27 @@ function renderDice() {
   }
 }
 
+function applyLang() {
+  document.documentElement.lang = lang;
+  langBtn.textContent = lang === 'en' ? 'DE' : 'EN';
+  langBtn.title = t('switchLang');
+  nameInput.placeholder = t('namePlaceholder');
+  rollBtn.textContent = t('roll');
+  for (const btn of modeToggle.querySelectorAll('.mode-btn')) {
+    btn.textContent = t(btn.dataset.mode === 'paper' ? 'modePaper' : 'modeDice');
+  }
+  highscoreBtn.title = t('highscoreTitle');
+  newBtn.title = t('newGameTitle');
+  dialogTitle.textContent = t('gameOverTitle');
+  dialogOk.textContent = t('ok');
+  dialogNew.textContent = t('newGame');
+  const total = board.querySelector('.total-label');
+  if (total) total.textContent = t('total');
+  for (const label of board.querySelectorAll('.closed-check')) {
+    label.title = t('closedByOther');
+  }
+}
+
 function renderMode() {
   document.body.classList.toggle('paper-mode', mode === 'paper');
   for (const btn of modeToggle.querySelectorAll('.mode-btn')) {
@@ -148,7 +235,7 @@ function renderStatus() {
   const msg = notice;
   notice = null;
   if (mode === 'paper') {
-    statusEl.textContent = msg || 'Paper score sheet — cross numbers as you play with real dice.';
+    statusEl.textContent = msg || t('statusPaper');
     rollBtn.hidden = true;
     nextBtn.hidden = true;
     return;
@@ -158,33 +245,31 @@ function renderStatus() {
   if (msg) {
     statusEl.textContent = msg;
   } else if (game.over) {
-    statusEl.textContent = 'Game over!';
+    statusEl.textContent = t('gameOver');
   } else if (turn.phase === 'idle') {
-    statusEl.textContent = 'Tap the dice (or Roll) to start the turn.';
+    statusEl.textContent = t('statusIdle');
   } else if (turn.phase === 'white') {
-    statusEl.textContent =
-      `White dice ${turn.white1} + ${turn.white2} = ${turn.whiteValue()}. ` +
-      'Tap a highlighted number in any row to cross it, or skip.';
+    statusEl.textContent = t('statusWhite', turn.white1, turn.white2, turn.whiteValue());
   } else {
     const options = COLORS
       .map((c) => `${c}: ${turn.coloredValues(c).join(', ')}`)
       .filter((s) => !s.endsWith(': '))
       .join('  ·  ');
-    statusEl.textContent =
-      `Colored action — ${options}. Tap a highlighted number, or end your turn.`;
+    statusEl.textContent = t('statusColored', options);
   }
   if (turn.phase === 'white') {
     nextBtn.hidden = false;
-    nextBtn.textContent = 'Skip white';
+    nextBtn.textContent = t('skipWhite');
   } else if (turn.phase === 'colored' || turn.phase === 'done') {
     nextBtn.hidden = false;
-    nextBtn.textContent = 'End turn';
+    nextBtn.textContent = t('endTurnBtn');
   } else {
     nextBtn.hidden = true;
   }
 }
 
 function render() {
+  applyLang();
   renderMode();
   renderBoard();
   renderDice();
@@ -199,9 +284,7 @@ function doRoll() {
 
 function endTurn() {
   const penalized = turn.finish(game);
-  notice = penalized
-    ? 'No number crossed this turn — one penalty box marked.'
-    : 'Turn ended.';
+  notice = penalized ? t('noCross') : t('turnEnded');
   if (game.over) {
     endGame();
     return;
@@ -300,7 +383,7 @@ function maybeRecordHighscore() {
   store.set(HS_KEY, String(best));
   const name = (store.get(NAME_KEY) || '').trim();
   const who = name ? `${name}: ` : '';
-  notice = `Game over — ${who}score ${s.total}. Best score: ${best}.`;
+  notice = t('endScore', who, s.total, best);
 }
 
 function endGame() {
@@ -310,7 +393,7 @@ function endGame() {
   store.set(HS_KEY, String(best));
   const name = (store.get(NAME_KEY) || '').trim();
   const who = name ? `${name}: ` : '';
-  showDialog('Game over', `${who}Final score: ${s.total}. Best score: ${best}.`);
+  showDialog(t('gameOverTitle'), t('finalScore', who, s.total, best));
   render();
 }
 
@@ -364,7 +447,13 @@ modeToggle.addEventListener('click', (e) => {
 });
 nameInput.addEventListener('input', () => store.set(NAME_KEY, nameInput.value));
 highscoreBtn.addEventListener('click', () => {
-  showDialog('Highscore', `Best score: ${store.get(HS_KEY) || 0}.`);
+  showDialog(t('highscoreTitle'), t('bestScore', store.get(HS_KEY) || 0));
+});
+langBtn.addEventListener('click', () => {
+  lang = lang === 'en' ? 'de' : 'en';
+  store.set(LANG_KEY, lang);
+  notice = null;
+  render();
 });
 dialogOk.addEventListener('click', () => { overlay.hidden = true; });
 dialogNew.addEventListener('click', newGame);

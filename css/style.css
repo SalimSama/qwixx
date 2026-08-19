@@ -61,6 +61,11 @@ body {
   border-color: #333;
 }
 
+.lang-btn {
+  min-width: 44px;
+  font-weight: bold;
+}
+
 .controlbar {
   display: flex;
   align-items: center;
