@@ -116,6 +116,42 @@ test('skipped indexes include an early last cross as a blocker', () => {
   assert.deepEqual(g.skippedIndexes('red'), [0, 1, 2, 4, 5, 6, 7, 8, 9]);
 });
 
+test('canLock requires five crosses and an uncrossed last number', () => {
+  const g = new Game();
+  assert.equal(g.canLock('red'), false);
+  for (const v of [2, 3, 4, 5]) assert.equal(g.cross('red', v), true);
+  assert.equal(g.canLock('red'), false);
+  assert.equal(g.cross('red', 6), true);
+  assert.equal(g.canLock('red'), true);
+});
+
+test('canLock is false once the last number is already crossed early', () => {
+  const g = new Game();
+  for (const v of [2, 3, 4, 5, 6]) assert.equal(g.cross('red', v), true);
+  assert.equal(g.cross('red', 12), true);
+  assert.equal(g.locked.has('red'), true);
+  assert.equal(g.canLock('red'), false);
+  const g2 = new Game();
+  assert.equal(g2.cross('red', 12), true);
+  assert.equal(g2.canLock('red'), false);
+});
+
+test('canLock is false for locked, closed, and over rows', () => {
+  const g = new Game();
+  for (const v of [2, 3, 4, 5, 6]) g.cross('red', v);
+  g.cross('red', 12);
+  assert.equal(g.locked.has('red'), true);
+  assert.equal(g.canLock('red'), false);
+  const g2 = new Game();
+  g2.toggleClosed('blue');
+  assert.equal(g2.canLock('blue'), false);
+  const g3 = new Game();
+  g3.strict = true;
+  for (let i = 0; i < MAX_PENALTIES; i++) g3.addPenalty();
+  assert.equal(g3.over, true);
+  assert.equal(g3.canLock('yellow'), false);
+});
+
 test('a locked row rejects further crosses', () => {
   const g = new Game();
   for (const v of [2, 3, 4, 5, 6]) g.cross('red', v);

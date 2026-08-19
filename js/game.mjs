@@ -53,6 +53,11 @@ export class Game {
     return i >= 0 && this.crossed[color].has(i) && !this.closed.has(color);
   }
 
+  canLock(color) {
+    if ((this.over && this.strict) || this.locked.has(color) || this.closed.has(color)) return false;
+    return this.countInRow(color) >= CROSSES_TO_LOCK && !this.crossed[color].has(LAST);
+  }
+
   cross(color, value) {
     if (!this.canCross(color, value)) return false;
     const i = this.indexOf(color, value);

@@ -165,7 +165,7 @@ function isValidTarget(color, value) {
 }
 
 function isValidLock(color) {
-  return isValidTarget(color, lockTarget(color));
+  return isValidTarget(color, lockTarget(color)) && game.canLock(color);
 }
 
 function renderBoard() {
@@ -316,6 +316,10 @@ function onCellClick(color, value, el) {
 
 function onLockClick(color, el) {
   if (game.over) return;
+  if (!game.canLock(color)) {
+    shake(el);
+    return;
+  }
   const v = lockTarget(color);
   if (turn.phase === 'white' && v === turn.whiteValue() && turn.crossWhite(game, color)) {
     render();
@@ -340,6 +344,10 @@ function onCellToggle(color, value, el) {
 }
 
 function onLockToggle(color, el) {
+  if (!game.locked.has(color) && !game.canLock(color)) {
+    shake(el);
+    return;
+  }
   onCellToggle(color, lockTarget(color), el);
 }
 
