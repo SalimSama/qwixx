@@ -1,5 +1,0 @@
-- use hammer.js
-- highscores
-- shake to roll dices
-- swipe to highscores
-- rename crossed-out classes when inappropriate

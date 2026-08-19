@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Qwixx</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="wrapper">
+    <header class="topbar">
+      <div class="status" id="status">Tap the dice (or Roll) to start.</div>
+      <button class="btn" id="rollBtn">Roll</button>
+      <button class="btn" id="nextBtn" hidden>Next</button>
+    </header>
+
+    <main id="board"></main>
+
+    <div class="dices" id="dices" title="Roll the dice"></div>
+
+    <footer class="footer">
+      <button class="iconbtn" id="highscoreBtn" title="Highscore">
+        <img src="img/highscore.png" alt="Highscore">
+      </button>
+      <button class="iconbtn" id="newBtn" title="New game">
+        <img src="img/restart.png" alt="New game">
+      </button>
+    </footer>
+  </div>
+
+  <div class="overlay" id="overlay" hidden>
+    <div class="dialog">
+      <h2 id="dialogTitle">Game over</h2>
+      <p id="dialogBody"></p>
+      <button class="btn" id="dialogOk">OK</button>
+      <button class="btn" id="dialogNew">New game</button>
+    </div>
+  </div>
+
+  <script type="module" src="js/app.mjs"></script>
+</body>
+</html>
