@@ -293,6 +293,37 @@ test('toggling closed off restores the row', () => {
   assert.equal(g.canCross('blue', 6), true);
 });
 
+test('toggleClosed refuses to mark a locked row', () => {
+  const g = new Game();
+  for (const v of [2, 3, 4, 5, 6]) g.cross('red', v);
+  g.cross('red', 12);
+  assert.equal(g.locked.has('red'), true);
+  assert.equal(g.toggleClosed('red'), false);
+  assert.equal(g.closed.has('red'), false);
+  assert.equal(g.over, false);
+});
+
+test('toggleClosed refuses to mark a row whose last number is crossed', () => {
+  const g = new Game();
+  g.cross('red', 12);
+  assert.equal(g.toggleClosed('red'), false);
+  assert.equal(g.closed.has('red'), false);
+  g.cross('yellow', 12);
+  assert.equal(g.toggleClosed('yellow'), false);
+  assert.equal(g.toggleClosed('blue'), true);
+});
+
+test('refreshOver counts a shared row only once', () => {
+  const g = new Game();
+  g.locked.add('red');
+  g.closed.add('red');
+  g.refreshOver();
+  assert.equal(g.over, false);
+  g.locked.add('yellow');
+  g.refreshOver();
+  assert.equal(g.over, true);
+});
+
 test('scoring: triangular rows minus five per penalty', () => {
   const g = new Game();
   for (const v of [2, 3, 4]) assert.equal(g.cross('red', v), true);

@@ -22,7 +22,8 @@ export class Game {
   }
 
   refreshOver() {
-    this.over = this.locked.size + this.closed.size >= 2 || this.penalties >= MAX_PENALTIES;
+    const closedRows = new Set([...this.locked, ...this.closed]);
+    this.over = closedRows.size >= 2 || this.penalties >= MAX_PENALTIES;
     return this.over;
   }
 
@@ -100,8 +101,12 @@ export class Game {
 
   toggleClosed(color) {
     if (!ROWS[color]) return false;
-    if (this.closed.has(color)) this.closed.delete(color);
-    else this.closed.add(color);
+    if (this.closed.has(color)) {
+      this.closed.delete(color);
+    } else {
+      if (this.locked.has(color) || this.crossed[color].has(LAST)) return false;
+      this.closed.add(color);
+    }
     this.refreshOver();
     return true;
   }

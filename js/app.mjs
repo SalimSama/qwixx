@@ -386,9 +386,12 @@ function onPenaltyClick(el) {
   }
 }
 
-function onClosedToggle(color) {
+function onClosedToggle(color, el) {
   if (mode === 'dice' && game.over) return;
-  if (!game.toggleClosed(color)) return;
+  if (!game.toggleClosed(color)) {
+    shake(el);
+    return;
+  }
   if (game.over && mode === 'dice') {
     turn.phase = 'idle';
     endGame();
@@ -445,7 +448,7 @@ function newGame() {
 board.addEventListener('click', (e) => {
   const check = e.target.closest('input[data-closed]');
   if (check) {
-    onClosedToggle(check.dataset.closed);
+    onClosedToggle(check.dataset.closed, check);
     return;
   }
   const el = e.target.closest('.field, .failure');
