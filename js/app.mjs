@@ -15,7 +15,7 @@ const I18N = {
     skipWhite: 'Skip white',
     endTurnBtn: 'End turn',
     statusPaper: 'Paper score sheet — cross numbers as you play with real dice.',
-    statusIdle: 'Tap the dice (or Roll) to start the turn.',
+    statusIdle: "Tap a number to cross another player's white roll, or tap the dice (or Roll) for your turn.",
     statusWhite: (w1, w2, sum) =>
       `White dice ${w1} + ${w2} = ${sum}. Tap a highlighted number in any row to cross it, or skip.`,
     statusColored: (options) =>
@@ -43,7 +43,7 @@ const I18N = {
     skipWhite: 'Weiß überspringen',
     endTurnBtn: 'Zug beenden',
     statusPaper: 'Papier-Spielzettel — kreuze Zahlen an, während du mit echten Würfeln spielst.',
-    statusIdle: 'Tippe auf die Würfel (oder Würfeln), um den Zug zu starten.',
+    statusIdle: 'Tippe auf eine Zahl, um den weißen Wurf eines Mitspielers anzukreuzen, oder würfle für deinen eigenen Zug.',
     statusWhite: (w1, w2, sum) =>
       `Weiße Würfel ${w1} + ${w2} = ${sum}. Tippe auf eine markierte Zahl in einer beliebigen Reihe, um sie anzukreuzen, oder überspringe sie.`,
     statusColored: (options) =>
@@ -301,8 +301,24 @@ function doNext() {
   }
 }
 
+function passiveCross(color, value) {
+  if (!game.cross(color, value)) return false;
+  if (game.over) {
+    turn.phase = 'idle';
+    endGame();
+  } else {
+    render();
+  }
+  return true;
+}
+
 function onCellClick(color, value, el) {
   if (game.over) return;
+  if (turn.phase === 'idle') {
+    if (passiveCross(color, value)) return;
+    shake(el);
+    return;
+  }
   if (turn.phase === 'white' && value === turn.whiteValue() && turn.crossWhite(game, color)) {
     render();
     return;
@@ -321,6 +337,11 @@ function onLockClick(color, el) {
     return;
   }
   const v = lockTarget(color);
+  if (turn.phase === 'idle') {
+    if (passiveCross(color, v)) return;
+    shake(el);
+    return;
+  }
   if (turn.phase === 'white' && v === turn.whiteValue() && turn.crossWhite(game, color)) {
     render();
     return;
