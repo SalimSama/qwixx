@@ -100,7 +100,7 @@ body {
   padding: 4px;
   border-radius: 6px;
   margin-bottom: 6px;
-  grid-template-columns: repeat(11, minmax(0, 1fr)) 46px 46px;
+  grid-template-columns: repeat(11, minmax(0, 1fr)) 46px 46px 46px;
 }
 
 .row.red { background: var(--red); }
@@ -182,6 +182,25 @@ body {
   font-weight: bold;
 }
 
+.row .closed-check {
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.row .closed-check input {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.row.red .closed-check input { accent-color: var(--red); }
+.row.yellow .closed-check input { accent-color: #b08d00; }
+.row.green .closed-check input { accent-color: var(--green); }
+.row.blue .closed-check input { accent-color: var(--blue); }
+
 .row.locked { background: var(--grey); }
 .row.locked .field {
   background: #eee;
@@ -191,6 +210,15 @@ body {
 .row.locked .field.lock-field {
   background-image: url("../img/black_lock.png");
   background-color: #eee;
+}
+
+.row.closed .field {
+  opacity: 0.55;
+}
+
+.row.closed .rowscore,
+.row.closed .lock-field {
+  opacity: 0.55;
 }
 
 .row.penalties {

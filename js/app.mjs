@@ -37,6 +37,7 @@ let hsRecorded = false;
 let notice = null;
 const cells = {};
 const lockCells = {};
+const closedEls = {};
 const scoreEls = {};
 const penaltyEls = [];
 const diceEls = {};
@@ -50,6 +51,7 @@ function boardHTML() {
     }
     html += `<div class="field lock-field" data-color="${color}" data-lock="1"><span class="cross">X</span></div>`;
     html += `<div class="rowscore" data-score="${color}">0</div>`;
+    html += `<label class="closed-check" title="Closed by another player"><input type="checkbox" data-closed="${color}"></label>`;
     html += '</div>';
   }
   html += '<div class="row penalties">';
@@ -68,6 +70,7 @@ function buildBoard() {
       cells[color].set(Number(el.dataset.value), el);
     });
     lockCells[color] = rowEl.querySelector('.field.lock-field');
+    closedEls[color] = rowEl.querySelector('input[data-closed]');
     scoreEls[color] = rowEl.querySelector('.rowscore');
   }
   penaltyEls.push(...board.querySelectorAll('.failure[data-penalty]'));
@@ -103,6 +106,7 @@ function renderBoard() {
   for (const color of COLORS) {
     const rowEl = board.querySelector(`.row[data-color="${color}"]`);
     rowEl.classList.toggle('locked', game.locked.has(color));
+    rowEl.classList.toggle('closed', game.closed.has(color));
     const skipped = game.skippedIndexes(color);
     for (const v of ROWS[color].values) {
       const el = cells[color].get(v);
@@ -114,6 +118,7 @@ function renderBoard() {
     const lockEl = lockCells[color];
     lockEl.classList.toggle('crossed', game.isCrossed(color, 11));
     lockEl.classList.toggle('valid', isValidLock(color));
+    closedEls[color].checked = game.closed.has(color);
     scoreEls[color].textContent = game.rowScore(color);
   }
   penaltyEls.forEach((el, i) => el.classList.toggle('crossed', i < game.penalties));
@@ -124,7 +129,7 @@ function renderDice() {
   for (const id of DICE_IDS) {
     const el = diceEls[id];
     const value = turn.phase === 'idle' ? 0 : dieValue(id);
-    const removed = !isWhite(id) && game.locked.has(id);
+    const removed = !isWhite(id) && (game.locked.has(id) || game.closed.has(id));
     el.className = `dice ${isWhite(id) ? 'white' : id}${value ? ` d${value}` : ''}${removed ? ' removed' : ''}`;
   }
 }
@@ -269,6 +274,18 @@ function onPenaltyClick(el) {
   }
 }
 
+function onClosedToggle(color) {
+  if (mode === 'dice' && game.over) return;
+  if (!game.toggleClosed(color)) return;
+  if (game.over && mode === 'dice') {
+    turn.phase = 'idle';
+    endGame();
+    return;
+  }
+  maybeRecordHighscore();
+  render();
+}
+
 function shake(el) {
   el.classList.remove('shake');
   void el.offsetWidth;
@@ -314,6 +331,11 @@ function newGame() {
 }
 
 board.addEventListener('click', (e) => {
+  const check = e.target.closest('input[data-closed]');
+  if (check) {
+    onClosedToggle(check.dataset.closed);
+    return;
+  }
   const el = e.target.closest('.field, .failure');
   if (!el) return;
   if (mode === 'paper') {

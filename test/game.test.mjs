@@ -164,6 +164,61 @@ test('non-strict games stay editable after the end condition', () => {
   assert.equal(g.addPenalty(), false);
 });
 
+test('toggleClosed marks a row closed without points', () => {
+  const g = new Game();
+  assert.equal(g.cross('red', 5), true);
+  const scoreBefore = g.score().total;
+  assert.equal(g.toggleClosed('red'), true);
+  assert.equal(g.closed.has('red'), true);
+  assert.equal(g.countInRow('red'), 1);
+  assert.equal(g.rowScore('red'), 1);
+  assert.equal(g.score().total, scoreBefore);
+});
+
+test('a closed row rejects crosses and uncrosses', () => {
+  const g = new Game();
+  g.cross('red', 5);
+  assert.equal(g.toggleClosed('red'), true);
+  assert.equal(g.canCross('red', 7), false);
+  assert.equal(g.cross('red', 7), false);
+  assert.equal(g.uncross('red', 5), false);
+  assert.equal(g.isCrossed('red', g.indexOf('red', 5)), true);
+});
+
+test('closing two rows by checkbox ends the game', () => {
+  const g = new Game();
+  assert.equal(g.toggleClosed('red'), true);
+  assert.equal(g.over, false);
+  assert.equal(g.toggleClosed('yellow'), true);
+  assert.equal(g.over, true);
+});
+
+test('a checkbox-closed row counts toward the end of game like a locked one', () => {
+  const g = new Game();
+  for (const v of [2, 3, 4, 5, 6]) g.cross('red', v);
+  g.cross('red', 12);
+  assert.equal(g.locked.has('red'), true);
+  assert.equal(g.over, false);
+  assert.equal(g.toggleClosed('yellow'), true);
+  assert.equal(g.over, true);
+});
+
+test('toggleClosed on an invalid color is rejected', () => {
+  const g = new Game();
+  assert.equal(g.toggleClosed('pink'), false);
+  assert.equal(g.closed.size, 0);
+});
+
+test('toggling closed off restores the row', () => {
+  const g = new Game();
+  assert.equal(g.toggleClosed('blue'), true);
+  assert.equal(g.closed.has('blue'), true);
+  assert.equal(g.toggleClosed('blue'), true);
+  assert.equal(g.closed.has('blue'), false);
+  assert.equal(g.over, false);
+  assert.equal(g.canCross('blue', 6), true);
+});
+
 test('scoring: triangular rows minus five per penalty', () => {
   const g = new Game();
   for (const v of [2, 3, 4]) assert.equal(g.cross('red', v), true);

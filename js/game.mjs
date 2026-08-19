@@ -15,13 +15,14 @@ export class Game {
   constructor() {
     this.crossed = Object.fromEntries(COLORS.map((c) => [c, new Set()]));
     this.locked = new Set();
+    this.closed = new Set();
     this.penalties = 0;
     this.over = false;
     this.strict = true;
   }
 
   refreshOver() {
-    this.over = this.locked.size >= 2 || this.penalties >= MAX_PENALTIES;
+    this.over = this.locked.size + this.closed.size >= 2 || this.penalties >= MAX_PENALTIES;
     return this.over;
   }
 
@@ -38,7 +39,7 @@ export class Game {
   }
 
   canCross(color, value) {
-    if ((this.over && this.strict) || this.locked.has(color)) return false;
+    if ((this.over && this.strict) || this.locked.has(color) || this.closed.has(color)) return false;
     const i = this.indexOf(color, value);
     if (i < 0 || this.crossed[color].has(i)) return false;
     if (i === LAST) return this.countInRow(color) >= CROSSES_TO_LOCK;
@@ -50,7 +51,7 @@ export class Game {
 
   canUncross(color, value) {
     const i = this.indexOf(color, value);
-    return i >= 0 && this.crossed[color].has(i);
+    return i >= 0 && this.crossed[color].has(i) && !this.closed.has(color);
   }
 
   cross(color, value) {
@@ -88,6 +89,14 @@ export class Game {
   removePenalty() {
     if (this.penalties <= 0) return false;
     this.penalties -= 1;
+    this.refreshOver();
+    return true;
+  }
+
+  toggleClosed(color) {
+    if (!ROWS[color]) return false;
+    if (this.closed.has(color)) this.closed.delete(color);
+    else this.closed.add(color);
     this.refreshOver();
     return true;
   }
