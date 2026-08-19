@@ -42,7 +42,6 @@ export class Game {
     if ((this.over && this.strict) || this.locked.has(color) || this.closed.has(color)) return false;
     const i = this.indexOf(color, value);
     if (i < 0 || this.crossed[color].has(i)) return false;
-    if (i === LAST) return this.countInRow(color) >= CROSSES_TO_LOCK;
     for (const j of this.crossed[color]) {
       if (j > i) return false;
     }
@@ -57,8 +56,9 @@ export class Game {
   cross(color, value) {
     if (!this.canCross(color, value)) return false;
     const i = this.indexOf(color, value);
+    const crosses = this.countInRow(color);
     this.crossed[color].add(i);
-    if (i === LAST) {
+    if (i === LAST && crosses >= CROSSES_TO_LOCK) {
       this.crossed[color].add(LAST + 1);
       this.locked.add(color);
       this.refreshOver();
@@ -115,7 +115,7 @@ export class Game {
   skippedIndexes(color) {
     let max = -1;
     for (const j of this.crossed[color]) {
-      if (j < LAST && j > max) max = j;
+      if (j <= LAST && j > max) max = j;
     }
     const skipped = [];
     for (let i = 0; i < LAST; i++) {

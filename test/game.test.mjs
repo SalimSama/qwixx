@@ -68,14 +68,52 @@ test('unknown values are rejected', () => {
 
 test('locking the last number requires five crosses first', () => {
   const g = new Game();
-  assert.equal(g.canCross('red', 12), false);
-  for (const v of [2, 3, 4, 5]) assert.equal(g.cross('red', v), true);
-  assert.equal(g.canCross('red', 12), false);
-  assert.equal(g.cross('red', 6), true);
+  for (const v of [2, 3, 4, 5, 6]) assert.equal(g.cross('red', v), true);
   assert.equal(g.canCross('red', 12), true);
   assert.equal(g.cross('red', 12), true);
   assert.equal(g.locked.has('red'), true);
   assert.equal(g.countInRow('red'), 7);
+});
+
+test('crossing the last number early is allowed but does not lock', () => {
+  const g = new Game();
+  assert.equal(g.canCross('red', 12), true);
+  assert.equal(g.cross('red', 12), true);
+  assert.equal(g.locked.has('red'), false);
+  assert.equal(g.closed.has('red'), false);
+  assert.equal(g.countInRow('red'), 1);
+  assert.equal(g.isCrossed('red', 11), false);
+  assert.equal(g.cross('red', 12), false);
+  assert.equal(g.canCross('red', 2), false);
+  assert.equal(g.cross('red', 2), false);
+});
+
+test('an early last cross counts as a normal cross for scoring', () => {
+  const g = new Game();
+  for (const v of [2, 3, 4]) assert.equal(g.cross('red', v), true);
+  assert.equal(g.cross('red', 12), true);
+  assert.equal(g.countInRow('red'), 4);
+  assert.equal(g.rowScore('red'), 10);
+  assert.equal(g.score().rows.red, 10);
+});
+
+test('uncrossing an early last cross restores the row', () => {
+  const g = new Game();
+  g.cross('red', 5);
+  g.cross('red', 12);
+  assert.equal(g.canCross('red', 9), false);
+  assert.equal(g.uncross('red', 12), true);
+  assert.equal(g.locked.has('red'), false);
+  assert.equal(g.canCross('red', 9), true);
+  assert.equal(g.cross('red', 9), true);
+});
+
+test('skipped indexes include an early last cross as a blocker', () => {
+  const g = new Game();
+  g.cross('red', 5);
+  assert.deepEqual(g.skippedIndexes('red'), [0, 1, 2]);
+  g.cross('red', 12);
+  assert.deepEqual(g.skippedIndexes('red'), [0, 1, 2, 4, 5, 6, 7, 8, 9]);
 });
 
 test('a locked row rejects further crosses', () => {
