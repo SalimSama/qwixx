@@ -66,13 +66,18 @@ test('unknown values are rejected', () => {
   assert.equal(g.cross('red', 13), false);
 });
 
-test('locking the last number requires five crosses first', () => {
+test('crossing the last number never locks automatically', () => {
   const g = new Game();
-  for (const v of [2, 3, 4, 5, 6]) assert.equal(g.cross('red', v), true);
-  assert.equal(g.canCross('red', 12), true);
   assert.equal(g.cross('red', 12), true);
-  assert.equal(g.locked.has('red'), true);
-  assert.equal(g.countInRow('red'), 7);
+  assert.equal(g.locked.has('red'), false);
+  const h = new Game();
+  for (const v of [2, 3, 4, 5, 6]) assert.equal(h.cross('red', v), true);
+  assert.equal(h.canCross('red', 12), true);
+  assert.equal(h.cross('red', 12), true);
+  assert.equal(h.locked.has('red'), false);
+  assert.equal(h.closed.has('red'), false);
+  assert.equal(h.countInRow('red'), 6);
+  assert.equal(h.rowScore('red'), 21);
 });
 
 test('crossing the last number early is allowed but does not lock', () => {
@@ -82,7 +87,7 @@ test('crossing the last number early is allowed but does not lock', () => {
   assert.equal(g.locked.has('red'), false);
   assert.equal(g.closed.has('red'), false);
   assert.equal(g.countInRow('red'), 1);
-  assert.equal(g.isCrossed('red', 11), false);
+  assert.equal(g.rowCount('red'), 1);
   assert.equal(g.cross('red', 12), false);
   assert.equal(g.canCross('red', 2), false);
   assert.equal(g.cross('red', 2), false);
@@ -116,47 +121,97 @@ test('skipped indexes include an early last cross as a blocker', () => {
   assert.deepEqual(g.skippedIndexes('red'), [0, 1, 2, 4, 5, 6, 7, 8, 9]);
 });
 
-test('canLock requires five crosses and an uncrossed last number', () => {
+test('canMarkLock requires a crossed last number and five crosses', () => {
   const g = new Game();
-  assert.equal(g.canLock('red'), false);
-  for (const v of [2, 3, 4, 5]) assert.equal(g.cross('red', v), true);
-  assert.equal(g.canLock('red'), false);
-  assert.equal(g.cross('red', 6), true);
-  assert.equal(g.canLock('red'), true);
+  assert.equal(g.canMarkLock('red'), false);
+  assert.equal(g.markLock('red'), false);
+  for (const v of [2, 3, 4]) assert.equal(g.cross('red', v), true);
+  g.cross('red', 12);
+  assert.equal(g.canMarkLock('red'), false);
+  const h = new Game();
+  for (const v of [2, 3, 4, 5, 6]) h.cross('red', v);
+  h.cross('red', 12);
+  assert.equal(h.locked.has('red'), false);
+  assert.equal(h.canMarkLock('red'), true);
 });
 
-test('canLock is false once the last number is already crossed early', () => {
-  const g = new Game();
-  for (const v of [2, 3, 4, 5, 6]) assert.equal(g.cross('red', v), true);
-  assert.equal(g.cross('red', 12), true);
-  assert.equal(g.locked.has('red'), true);
-  assert.equal(g.canLock('red'), false);
-  const g2 = new Game();
-  assert.equal(g2.cross('red', 12), true);
-  assert.equal(g2.canLock('red'), false);
-});
-
-test('canLock is false for locked, closed, and over rows', () => {
+test('markLock closes the row explicitly', () => {
   const g = new Game();
   for (const v of [2, 3, 4, 5, 6]) g.cross('red', v);
   g.cross('red', 12);
+  assert.equal(g.locked.has('red'), false);
+  assert.equal(g.markLock('red'), true);
   assert.equal(g.locked.has('red'), true);
-  assert.equal(g.canLock('red'), false);
+  assert.equal(g.rowScore('red'), 28);
+  assert.equal(g.canCross('red', 7), false);
+  assert.equal(g.markLock('red'), false);
+});
+
+test('unmarkLock reopens the row and removes the lock cross', () => {
+  const g = new Game();
+  for (const v of [2, 3, 4, 5, 6]) g.cross('red', v);
+  g.cross('red', 12);
+  assert.equal(g.unmarkLock('red'), false);
+  assert.equal(g.markLock('red'), true);
+  assert.equal(g.unmarkLock('red'), true);
+  assert.equal(g.locked.has('red'), false);
+  assert.equal(g.rowCount('red'), 6);
+  assert.equal(g.rowScore('red'), 21);
+  assert.equal(g.canMarkLock('red'), true);
+  assert.equal(g.unmarkLock('red'), false);
+});
+
+test('uncrossing the last number clears a manually marked lock too', () => {
+  const g = new Game();
+  for (const v of [2, 3, 4, 5, 6]) g.cross('red', v);
+  g.cross('red', 12);
+  assert.equal(g.markLock('red'), true);
+  assert.equal(g.uncross('red', 12), true);
+  assert.equal(g.locked.has('red'), false);
+  assert.equal(g.rowCount('red'), 5);
+  assert.equal(g.rowScore('red'), 15);
+});
+
+test('another player locks the row: last cross without lock, then checkbox', () => {
+  const g = new Game();
+  for (const v of [2, 3, 4, 5, 6]) g.cross('red', v);
+  assert.equal(g.cross('red', 12), true);
+  assert.equal(g.locked.has('red'), false);
+  assert.equal(g.rowScore('red'), 21);
+  assert.equal(g.toggleClosed('red'), true);
+  assert.equal(g.closed.has('red'), true);
+  assert.equal(g.locked.has('red'), false);
+  assert.equal(g.score().total, 21);
+});
+
+test('canMarkLock is false for locked, closed, and over rows', () => {
+  const g = new Game();
+  for (const v of [2, 3, 4, 5, 6]) g.cross('red', v);
+  g.cross('red', 12);
+  assert.equal(g.markLock('red'), true);
+  assert.equal(g.canMarkLock('red'), false);
   const g2 = new Game();
   g2.toggleClosed('blue');
-  assert.equal(g2.canLock('blue'), false);
+  assert.equal(g2.canMarkLock('blue'), false);
   const g3 = new Game();
   g3.strict = true;
   for (let i = 0; i < MAX_PENALTIES; i++) g3.addPenalty();
   assert.equal(g3.over, true);
-  assert.equal(g3.canLock('yellow'), false);
+  assert.equal(g3.canMarkLock('yellow'), false);
+});
+
+test('lock marking rejects unknown colors', () => {
+  const g = new Game();
+  assert.equal(g.canMarkLock('pink'), false);
+  assert.equal(g.markLock('pink'), false);
+  assert.equal(g.unmarkLock('pink'), false);
 });
 
 test('a locked row rejects further crosses', () => {
   const g = new Game();
   for (const v of [2, 3, 4, 5, 6]) g.cross('red', v);
   g.cross('red', 12);
-  assert.equal(g.locked.has('red'), true);
+  assert.equal(g.markLock('red'), true);
   assert.equal(g.canCross('red', 7), false);
   assert.equal(g.cross('red', 7), false);
 });
@@ -165,9 +220,11 @@ test('locking two rows ends the game', () => {
   const g = new Game();
   for (const v of [2, 3, 4, 5, 6]) g.cross('red', v);
   g.cross('red', 12);
+  assert.equal(g.markLock('red'), true);
   assert.equal(g.over, false);
   for (const v of [2, 3, 4, 5, 6]) g.cross('yellow', v);
   g.cross('yellow', 12);
+  assert.equal(g.markLock('yellow'), true);
   assert.equal(g.over, true);
 });
 
@@ -188,25 +245,41 @@ test('uncross removes a cross and allows re-crossing', () => {
   assert.equal(g.cross('red', 5), true);
 });
 
-test('uncrossing the last number unlocks the row', () => {
+test('uncrossing the last number without a lock just reopens blocking', () => {
   const g = new Game();
   for (const v of [2, 3, 4, 5, 6]) g.cross('red', v);
   g.cross('red', 12);
-  assert.equal(g.locked.has('red'), true);
-  assert.equal(g.uncross('red', 12), true);
   assert.equal(g.locked.has('red'), false);
-  assert.equal(g.isCrossed('red', 11), false);
-  assert.equal(g.canCross('red', 7), true);
+  assert.equal(g.canMarkLock('red'), true);
+  assert.equal(g.uncross('red', 12), true);
+  assert.equal(g.rowCount('red'), 5);
+  assert.equal(g.canMarkLock('red'), false);
 });
 
-test('uncrossing a lock number recomputes the end of game', () => {
+test('uncrossing a locked last number recomputes the end of game', () => {
   const g = new Game();
   for (const v of [2, 3, 4, 5, 6]) g.cross('red', v);
   g.cross('red', 12);
+  g.markLock('red');
   for (const v of [2, 3, 4, 5, 6]) g.cross('yellow', v);
   g.cross('yellow', 12);
+  g.markLock('yellow');
   assert.equal(g.over, true);
   assert.equal(g.uncross('yellow', 12), true);
+  assert.equal(g.over, false);
+});
+
+test('unmarking a lock recomputes the end of game', () => {
+  const g = new Game();
+  for (const v of [2, 3, 4, 5, 6]) g.cross('red', v);
+  g.cross('red', 12);
+  g.markLock('red');
+  for (const v of [2, 3, 4, 5, 6]) g.cross('yellow', v);
+  g.cross('yellow', 12);
+  g.markLock('yellow');
+  assert.equal(g.over, true);
+  assert.equal(g.unmarkLock('yellow'), true);
+  assert.equal(g.locked.has('yellow'), false);
   assert.equal(g.over, false);
 });
 
@@ -271,6 +344,7 @@ test('a checkbox-closed row counts toward the end of game like a locked one', ()
   const g = new Game();
   for (const v of [2, 3, 4, 5, 6]) g.cross('red', v);
   g.cross('red', 12);
+  assert.equal(g.markLock('red'), true);
   assert.equal(g.locked.has('red'), true);
   assert.equal(g.over, false);
   assert.equal(g.toggleClosed('yellow'), true);
@@ -297,19 +371,20 @@ test('toggleClosed refuses to mark a locked row', () => {
   const g = new Game();
   for (const v of [2, 3, 4, 5, 6]) g.cross('red', v);
   g.cross('red', 12);
+  assert.equal(g.markLock('red'), true);
   assert.equal(g.locked.has('red'), true);
   assert.equal(g.toggleClosed('red'), false);
   assert.equal(g.closed.has('red'), false);
   assert.equal(g.over, false);
 });
 
-test('toggleClosed refuses to mark a row whose last number is crossed', () => {
+test('toggleClosed allows a row whose last number was crossed without lock', () => {
   const g = new Game();
   g.cross('red', 12);
-  assert.equal(g.toggleClosed('red'), false);
-  assert.equal(g.closed.has('red'), false);
+  assert.equal(g.toggleClosed('red'), true);
+  assert.equal(g.closed.has('red'), true);
   g.cross('yellow', 12);
-  assert.equal(g.toggleClosed('yellow'), false);
+  assert.equal(g.toggleClosed('yellow'), true);
   assert.equal(g.toggleClosed('blue'), true);
 });
 
@@ -422,5 +497,6 @@ test('turn: locked rows offer no colored action', () => {
   turn.roll();
   for (const v of [2, 3, 4, 5, 6]) g.cross('yellow', v);
   g.cross('yellow', 12);
+  assert.equal(g.markLock('yellow'), true);
   assert.equal(turn.coloredTargets(g, 'yellow').length, 0);
 });

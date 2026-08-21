@@ -9,7 +9,7 @@ export const COLORS = Object.keys(ROWS);
 export const MAX_PENALTIES = 4;
 export const CROSSES_TO_LOCK = 5;
 export const PENALTY_POINTS = 5;
-const LAST = 10;
+const LAST = ROWS.red.values.length - 1;
 
 export class Game {
   constructor() {
@@ -54,21 +54,31 @@ export class Game {
     return i >= 0 && this.crossed[color].has(i) && !this.closed.has(color);
   }
 
-  canLock(color) {
+  canMarkLock(color) {
+    if (!ROWS[color]) return false;
     if ((this.over && this.strict) || this.locked.has(color) || this.closed.has(color)) return false;
-    return this.countInRow(color) >= CROSSES_TO_LOCK && !this.crossed[color].has(LAST);
+    return this.crossed[color].has(LAST) && this.countInRow(color) >= CROSSES_TO_LOCK;
+  }
+
+  markLock(color) {
+    if (!this.canMarkLock(color)) return false;
+    this.locked.add(color);
+    this.refreshOver();
+    return true;
+  }
+
+  unmarkLock(color) {
+    if (!ROWS[color]) return false;
+    if (!this.locked.has(color) || this.closed.has(color)) return false;
+    this.locked.delete(color);
+    this.refreshOver();
+    return true;
   }
 
   cross(color, value) {
     if (!this.canCross(color, value)) return false;
     const i = this.indexOf(color, value);
-    const crosses = this.countInRow(color);
     this.crossed[color].add(i);
-    if (i === LAST && crosses >= CROSSES_TO_LOCK) {
-      this.crossed[color].add(LAST + 1);
-      this.locked.add(color);
-      this.refreshOver();
-    }
     return true;
   }
 
@@ -76,10 +86,7 @@ export class Game {
     if (!this.canUncross(color, value)) return false;
     const i = this.indexOf(color, value);
     this.crossed[color].delete(i);
-    if (i === LAST) {
-      this.crossed[color].delete(LAST + 1);
-      this.locked.delete(color);
-    }
+    if (i === LAST) this.locked.delete(color);
     this.refreshOver();
     return true;
   }
@@ -104,15 +111,19 @@ export class Game {
     if (this.closed.has(color)) {
       this.closed.delete(color);
     } else {
-      if (this.locked.has(color) || this.crossed[color].has(LAST)) return false;
+      if (this.locked.has(color)) return false;
       this.closed.add(color);
     }
     this.refreshOver();
     return true;
   }
 
+  rowCount(color) {
+    return this.countInRow(color) + (this.locked.has(color) ? 1 : 0);
+  }
+
   rowScore(color) {
-    const n = this.countInRow(color);
+    const n = this.rowCount(color);
     return (n * (n + 1)) / 2;
   }
 

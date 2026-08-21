@@ -155,7 +155,6 @@ function buildDice() {
 
 const isWhite = (id) => id === 'w1' || id === 'w2';
 const dieValue = (id) => (isWhite(id) ? (id === 'w1' ? turn.white1 : turn.white2) : turn.colors[id]);
-const lockTarget = (color) => ROWS[color].values[10];
 
 function isValidTarget(color, value) {
   if (game.over) return false;
@@ -165,7 +164,7 @@ function isValidTarget(color, value) {
 }
 
 function isValidLock(color) {
-  return isValidTarget(color, lockTarget(color)) && game.canLock(color);
+  return game.canMarkLock(color);
 }
 
 function renderBoard() {
@@ -182,7 +181,7 @@ function renderBoard() {
       el.classList.toggle('valid', isValidTarget(color, v));
     }
     const lockEl = lockCells[color];
-    lockEl.classList.toggle('crossed', game.isCrossed(color, 11));
+    lockEl.classList.toggle('crossed', game.locked.has(color));
     lockEl.classList.toggle('valid', isValidLock(color));
     closedEls[color].checked = game.closed.has(color);
     scoreEls[color].textContent = game.rowScore(color);
@@ -332,25 +331,16 @@ function onCellClick(color, value, el) {
 
 function onLockClick(color, el) {
   if (game.over) return;
-  if (!game.canLock(color)) {
+  if (!game.markLock(color)) {
     shake(el);
     return;
   }
-  const v = lockTarget(color);
-  if (turn.phase === 'idle') {
-    if (passiveCross(color, v)) return;
-    shake(el);
+  if (game.over) {
+    turn.phase = 'idle';
+    endGame();
     return;
   }
-  if (turn.phase === 'white' && v === turn.whiteValue() && turn.crossWhite(game, color)) {
-    render();
-    return;
-  }
-  if (turn.phase === 'colored' && turn.crossColored(game, color, v)) {
-    render();
-    return;
-  }
-  shake(el);
+  render();
 }
 
 function onCellToggle(color, value, el) {
@@ -365,11 +355,13 @@ function onCellToggle(color, value, el) {
 }
 
 function onLockToggle(color, el) {
-  if (!game.locked.has(color) && !game.canLock(color)) {
+  const ok = game.locked.has(color) ? game.unmarkLock(color) : game.markLock(color);
+  if (ok) {
+    maybeRecordHighscore();
+    render();
+  } else {
     shake(el);
-    return;
   }
-  onCellToggle(color, lockTarget(color), el);
 }
 
 function onPenaltyClick(el) {
