@@ -193,8 +193,8 @@ function renderBoard() {
 function renderDice() {
   for (const id of DICE_IDS) {
     const el = diceEls[id];
-    const value = turn.phase === 'idle' ? 0 : dieValue(id);
     const removed = !isWhite(id) && (game.locked.has(id) || game.closed.has(id));
+    const value = removed || turn.phase === 'idle' ? 0 : dieValue(id);
     el.className = `dice ${isWhite(id) ? 'white' : id}${value ? ` d${value}` : ''}${removed ? ' removed' : ''}`;
   }
 }
