@@ -245,6 +245,37 @@ test('uncross removes a cross and allows re-crossing', () => {
   assert.equal(g.cross('red', 5), true);
 });
 
+test('only the rightmost cross can be uncrossed', () => {
+  const g = new Game();
+  for (const v of [2, 3, 4, 5, 6]) assert.equal(g.cross('red', v), true);
+  assert.equal(g.canUncross('red', 4), false);
+  assert.equal(g.uncross('red', 4), false);
+  assert.equal(g.isCrossed('red', g.indexOf('red', 4)), true);
+  assert.equal(g.uncross('red', 6), true);
+});
+
+test('a locked row is dismantled from the right', () => {
+  const g = new Game();
+  for (const v of [2, 3, 4, 5, 6]) g.cross('red', v);
+  g.cross('red', 12);
+  g.markLock('red');
+  assert.equal(g.locked.has('red'), true);
+  assert.equal(g.canUncross('red', 6), false);
+  assert.equal(g.uncross('red', 12), true);
+  assert.equal(g.locked.has('red'), false);
+  assert.equal(g.uncross('red', 6), true);
+  assert.equal(g.isCrossed('red', g.indexOf('red', 6)), false);
+});
+
+test('the rightmost rule also applies in descending rows', () => {
+  const g = new Game();
+  for (const v of [12, 11, 10]) assert.equal(g.cross('green', v), true);
+  assert.equal(g.canUncross('green', 12), false);
+  assert.equal(g.uncross('green', 10), true);
+  assert.equal(g.uncross('green', 11), true);
+  assert.equal(g.uncross('green', 12), true);
+});
+
 test('uncrossing the last number without a lock just reopens blocking', () => {
   const g = new Game();
   for (const v of [2, 3, 4, 5, 6]) g.cross('red', v);

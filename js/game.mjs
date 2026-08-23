@@ -51,7 +51,12 @@ export class Game {
 
   canUncross(color, value) {
     const i = this.indexOf(color, value);
-    return i >= 0 && this.crossed[color].has(i) && !this.closed.has(color);
+    if (i < 0 || !this.crossed[color].has(i)) return false;
+    if (this.closed.has(color)) return false;
+    for (const j of this.crossed[color]) {
+      if (j > i) return false;
+    }
+    return true;
   }
 
   canMarkLock(color) {
