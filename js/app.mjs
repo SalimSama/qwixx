@@ -22,6 +22,8 @@ const I18N = {
       `Colored action — ${options}. Tap a highlighted number, or end your turn.`,
     gameOver: 'Game over!',
     noCross: 'No number crossed this turn — one penalty box marked.',
+    penaltiesLabel: 'Misses',
+    penaltyHint: 'Marked when nothing is crossed in your turn. Each miss costs -5 points; four misses end the game.',
     turnEnded: 'Turn ended.',
     total: 'Total',
     closedByOther: 'Closed by another player',
@@ -50,6 +52,8 @@ const I18N = {
       `Farbaktion — ${options}. Tippe auf eine markierte Zahl oder beende deinen Zug.`,
     gameOver: 'Spiel beendet!',
     noCross: 'Keine Zahl angekreuzt — ein Minusfeld wurde markiert.',
+    penaltiesLabel: 'Fehlwürfe',
+    penaltyHint: 'Markiert, wenn im Zug nichts angekreuzt wird. Jeder Fehlwurf kostet -5 Punkte; vier Fehlwürfe beenden das Spiel.',
     turnEnded: 'Zug beendet.',
     total: 'Gesamt',
     closedByOther: 'Von einem anderen Spieler geschlossen',
@@ -121,8 +125,8 @@ function boardHTML() {
     html += '</div>';
   }
   html += '<div class="row penalties">';
-  for (let i = 0; i < 4; i++) html += `<div class="failure" data-penalty="${i}">X</div>`;
-  html += `<div class="total-label">${t('total')}</div><div class="total-value" data-total>0</div>`;
+  for (let i = 0; i < 4; i++) html += `<div class="failure" data-penalty="${i}" title="${t('penaltyHint')}">X</div>`;
+  html += `<div class="penalties-info"><span data-penalty-label>${t('penaltiesLabel')}</span><span class="total-label">${t('total')}</span></div><div class="total-value" data-total>0</div>`;
   html += '</div>';
   return html;
 }
@@ -215,6 +219,11 @@ function applyLang() {
   dialogNew.textContent = t('newGame');
   const total = board.querySelector('.total-label');
   if (total) total.textContent = t('total');
+  const penaltyLabel = board.querySelector('[data-penalty-label]');
+  if (penaltyLabel) penaltyLabel.textContent = t('penaltiesLabel');
+  for (const failure of board.querySelectorAll('.failure')) {
+    failure.title = t('penaltyHint');
+  }
   for (const label of board.querySelectorAll('.closed-check')) {
     label.title = t('closedByOther');
   }

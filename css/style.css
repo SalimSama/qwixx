@@ -262,6 +262,21 @@ body {
   color: #333;
 }
 
+.penalties-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-right: 8px;
+  min-width: 0;
+}
+
+.penalties-info [data-penalty-label] {
+  font-size: 15px;
+  color: #333;
+  white-space: nowrap;
+}
+
 .total-value {
   height: 40px;
   border: 1px solid #444;
