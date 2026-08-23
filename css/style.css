@@ -4,6 +4,8 @@
   --green: #339900;
   --blue: #336699;
   --grey: #999999;
+  --side: 46px;
+  --field-h: 40px;
 }
 
 * {
@@ -21,6 +23,7 @@ body {
   background: #dddddf;
   font-family: system-ui, -apple-system, sans-serif;
   padding: 10px;
+  padding-bottom: calc(10px + env(safe-area-inset-bottom));
 }
 
 .wrapper {
@@ -105,7 +108,7 @@ body {
   padding: 4px;
   border-radius: 6px;
   margin-bottom: 6px;
-  grid-template-columns: repeat(11, minmax(0, 1fr)) 46px 46px 46px;
+  grid-template-columns: repeat(11, minmax(0, 1fr)) var(--side) var(--side) var(--side);
 }
 
 .row.red { background: var(--red); }
@@ -115,12 +118,12 @@ body {
 
 .row .field {
   position: relative;
-  height: 40px;
+  height: var(--field-h);
   border: 1px solid #444;
   border-radius: 5px;
   text-align: center;
   font-size: clamp(14px, 2.5vw, 24px);
-  line-height: 38px;
+  line-height: calc(var(--field-h) - 2px);
   cursor: default;
   user-select: none;
 }
@@ -176,7 +179,7 @@ body {
 .row.blue .field.lock-field { background-image: url("../img/blue_lock.png"); }
 
 .row .rowscore {
-  height: 40px;
+  height: var(--field-h);
   border: 1px solid #444;
   border-radius: 5px;
   background: #fff;
@@ -188,7 +191,7 @@ body {
 }
 
 .row .closed-check {
-  height: 40px;
+  height: var(--field-h);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -227,13 +230,13 @@ body {
 }
 
 .row.penalties {
-  grid-template-columns: repeat(4, 46px) 1fr 46px;
+  grid-template-columns: repeat(4, var(--side)) 1fr var(--side);
   background: transparent;
   align-items: center;
 }
 
 .failure {
-  height: 40px;
+  height: var(--field-h);
   border: 2px solid #aaa;
   border-radius: 6px;
   background: #fff;
@@ -278,7 +281,7 @@ body {
 }
 
 .total-value {
-  height: 40px;
+  height: var(--field-h);
   border: 1px solid #444;
   border-radius: 5px;
   background: #fff;
@@ -413,4 +416,184 @@ body {
 
 .shake {
   animation: shake 0.15s linear 2;
+}
+
+.btn,
+.name-input,
+.status,
+.iconbtn,
+.row .field,
+.failure {
+  touch-action: manipulation;
+}
+
+@media (max-width: 620px) and (orientation: portrait) {
+  :root {
+    --side: 34px;
+    --field-h: 34px;
+  }
+
+  body {
+    padding: 6px;
+  }
+
+  .topbar {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .name-input {
+    order: -1;
+    flex-basis: 100%;
+    font-size: 16px;
+  }
+
+  .controlbar {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .status {
+    flex-basis: 100%;
+  }
+
+  .controlbar .btn {
+    flex: 1;
+    padding: 12px 10px;
+    font-size: 16px;
+  }
+
+  .row {
+    gap: 1px;
+    padding: 2px;
+    margin-bottom: 4px;
+  }
+
+  .row .field {
+    border-radius: 4px;
+    font-size: clamp(11px, 3.2vw, 24px);
+  }
+
+  .row .field .cross {
+    font-size: clamp(18px, 5vw, 38px);
+    top: -3px;
+  }
+
+  .row .field.lock-field {
+    background-size: 22px 22px;
+  }
+
+  .rowscore,
+  .total-value {
+    font-size: 15px;
+  }
+
+  .closed-check input {
+    width: 22px;
+    height: 22px;
+  }
+
+  .failure {
+    font-size: 18px;
+  }
+
+  .total-label {
+    font-size: 15px;
+    padding-right: 4px;
+  }
+
+  .penalties-info [data-penalty-label] {
+    font-size: 13px;
+  }
+
+  .dices {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px;
+    max-width: 100%;
+    margin: 8px auto;
+  }
+
+  .dice {
+    width: 42px;
+    height: 42px;
+    border-radius: 6px;
+    padding: 4px;
+  }
+
+  .dice .dot {
+    width: 7px;
+    height: 7px;
+  }
+
+  .footer {
+    justify-content: center;
+    gap: 16px;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 500px) {
+  :root {
+    --side: 40px;
+    --field-h: 32px;
+  }
+
+  body {
+    padding: 6px 10px;
+  }
+
+  .wrapper {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 250px;
+    grid-template-rows: auto minmax(0, 1fr) auto auto;
+    column-gap: 12px;
+    max-width: none;
+  }
+
+  .topbar {
+    grid-area: 1 / 1 / 2 / 3;
+  }
+
+  #board {
+    grid-area: 2 / 1 / 5 / 2;
+  }
+
+  .controlbar {
+    grid-area: 2 / 2 / 3 / 3;
+    align-self: start;
+    flex-direction: column;
+    align-items: stretch;
+    margin-bottom: 0;
+  }
+
+  .status {
+    min-height: 56px;
+  }
+
+  .controlbar .btn {
+    padding: 12px 10px;
+    font-size: 16px;
+  }
+
+  .dices {
+    grid-area: 3 / 2 / 4 / 3;
+    display: grid;
+    grid-template-columns: repeat(2, 44px);
+    gap: 6px;
+    justify-content: center;
+    align-self: center;
+    width: auto;
+    margin: 8px 0;
+  }
+
+  .dice {
+    width: 44px;
+    height: 44px;
+  }
+
+  .footer {
+    grid-area: 4 / 2 / 5 / 3;
+    justify-content: center;
+    margin-top: auto;
+  }
 }
