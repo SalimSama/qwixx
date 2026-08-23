@@ -430,7 +430,7 @@ body {
 @media (max-width: 620px) and (orientation: portrait) {
   :root {
     --side: 34px;
-    --field-h: 34px;
+    --field-h: clamp(30px, 4.8vh, 46px);
   }
 
   body {
@@ -463,29 +463,45 @@ body {
     font-size: 16px;
   }
 
+  #board {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 4px;
+    align-items: stretch;
+  }
+
   .row {
     gap: 1px;
     padding: 2px;
-    margin-bottom: 4px;
+    margin-bottom: 0;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-rows: repeat(11, var(--field-h)) max-content;
   }
 
-  .row .field {
+  .row.penalties {
+    grid-column: 1 / -1;
+    grid-template-columns: repeat(4, var(--side)) 1fr var(--side);
+    grid-template-rows: auto;
+    align-items: center;
+  }
+
+  .row .field[data-value] {
+    grid-column: 1 / -1;
     border-radius: 4px;
-    font-size: clamp(11px, 3.2vw, 24px);
+    font-size: clamp(15px, 5vw, 24px);
   }
 
   .row .field .cross {
-    font-size: clamp(18px, 5vw, 38px);
+    font-size: clamp(24px, 9vw, 46px);
     top: -3px;
   }
 
   .row .field.lock-field {
-    background-size: 22px 22px;
+    background-size: 24px 24px;
   }
 
-  .rowscore,
-  .total-value {
-    font-size: 15px;
+  .row .rowscore {
+    font-size: 17px;
   }
 
   .closed-check input {
