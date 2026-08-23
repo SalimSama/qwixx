@@ -32,6 +32,8 @@ const I18N = {
     gameOverTitle: 'Game over',
     ok: 'OK',
     newGame: 'New game',
+    undo: 'Undo',
+    moveUndone: 'Game-ending move undone — keep playing.',
     endScore: (who, total, best) => `Game over — ${who}score ${total}. Best score: ${best}.`,
     finalScore: (who, total, best) => `${who}Final score: ${total}. Best score: ${best}.`,
     bestScore: (best) => `Best score: ${best}.`,
@@ -62,6 +64,8 @@ const I18N = {
     gameOverTitle: 'Spiel beendet',
     ok: 'OK',
     newGame: 'Neues Spiel',
+    undo: 'Rückgängig',
+    moveUndone: 'Spielzug rückgängig gemacht — weiterspielen.',
     endScore: (who, total, best) => `Spiel beendet — ${who}${total} Punkte. Bestwert: ${best}.`,
     finalScore: (who, total, best) => `${who}Endstand: ${total} Punkte. Bestwert: ${best}.`,
     bestScore: (best) => `Bestwert: ${best}.`,
@@ -84,6 +88,7 @@ const dialogTitle = $('#dialogTitle');
 const dialogBody = $('#dialogBody');
 const dialogOk = $('#dialogOk');
 const dialogNew = $('#dialogNew');
+const dialogUndo = $('#dialogUndo');
 const langBtn = $('#langBtn');
 
 const store = {
@@ -99,7 +104,8 @@ let game;
 let turn;
 let mode = store.get(MODE_KEY) === 'dice' ? 'dice' : 'paper';
 let lang = store.get(LANG_KEY) === 'de' ? 'de' : 'en';
-let hsRecorded = false;
+let overUndo = null;
+let seenOver = false;
 let notice = null;
 const t = (key, ...args) => {
   const v = I18N[lang][key];
@@ -217,6 +223,7 @@ function applyLang() {
   dialogTitle.textContent = t('gameOverTitle');
   dialogOk.textContent = t('ok');
   dialogNew.textContent = t('newGame');
+  dialogUndo.textContent = t('undo');
   const total = board.querySelector('.total-label');
   if (total) total.textContent = t('total');
   const penaltyLabel = board.querySelector('[data-penalty-label]');
@@ -290,13 +297,19 @@ function doRoll() {
   render();
 }
 
+function armUndo(kind, color) {
+  overUndo = { kind, color, turn: { ...turn } };
+}
+
 function endTurn() {
+  armUndo('penalty');
   const penalized = turn.finish(game);
   notice = penalized ? t('noCross') : t('turnEnded');
   if (game.over) {
     endGame();
     return;
   }
+  overUndo = null;
   render();
 }
 
@@ -340,7 +353,9 @@ function onCellClick(color, value, el) {
 
 function onLockClick(color, el) {
   if (game.over) return;
+  armUndo('lock', color);
   if (!game.markLock(color)) {
+    overUndo = null;
     shake(el);
     return;
   }
@@ -349,6 +364,7 @@ function onLockClick(color, el) {
     endGame();
     return;
   }
+  overUndo = null;
   render();
 }
 
@@ -356,7 +372,7 @@ function onCellToggle(color, value, el) {
   const i = game.indexOf(color, value);
   const ok = game.isCrossed(color, i) ? game.uncross(color, value) : game.cross(color, value);
   if (ok) {
-    maybeRecordHighscore();
+    notifyGameOver();
     render();
   } else {
     shake(el);
@@ -364,11 +380,18 @@ function onCellToggle(color, value, el) {
 }
 
 function onLockToggle(color, el) {
-  const ok = game.locked.has(color) ? game.unmarkLock(color) : game.markLock(color);
+  let ok;
+  if (game.locked.has(color)) {
+    ok = game.unmarkLock(color);
+  } else {
+    armUndo('lock', color);
+    ok = game.markLock(color);
+  }
   if (ok) {
-    maybeRecordHighscore();
+    notifyGameOver();
     render();
   } else {
+    overUndo = null;
     shake(el);
   }
 }
@@ -376,20 +399,25 @@ function onLockToggle(color, el) {
 function onPenaltyClick(el) {
   const i = Number(el.dataset.penalty);
   let ok;
-  if (i === game.penalties) ok = game.addPenalty();
-  else if (i === game.penalties - 1) ok = game.removePenalty();
+  if (i === game.penalties) {
+    armUndo('penalty');
+    ok = game.addPenalty();
+  } else if (i === game.penalties - 1) ok = game.removePenalty();
   else ok = false;
   if (ok) {
-    maybeRecordHighscore();
+    notifyGameOver();
     render();
   } else {
+    overUndo = null;
     shake(el);
   }
 }
 
 function onClosedToggle(color, el) {
   if (mode === 'dice' && game.over) return;
+  armUndo('closed', color);
   if (!game.toggleClosed(color)) {
+    overUndo = null;
     shake(el);
     return;
   }
@@ -398,7 +426,7 @@ function onClosedToggle(color, el) {
     endGame();
     return;
   }
-  maybeRecordHighscore();
+  notifyGameOver();
   render();
 }
 
@@ -408,31 +436,46 @@ function shake(el) {
   el.classList.add('shake');
 }
 
-function maybeRecordHighscore() {
-  if (!game.over || hsRecorded) return;
-  hsRecorded = true;
+function notifyGameOver() {
+  if (!game.over) {
+    overUndo = null;
+    seenOver = false;
+    return;
+  }
+  if (seenOver) return;
+  seenOver = true;
   const s = game.score();
   const best = Math.max(Number(store.get(HS_KEY) || 0), s.total);
   store.set(HS_KEY, String(best));
   const name = (store.get(NAME_KEY) || '').trim();
   const who = name ? `${name}: ` : '';
   notice = t('endScore', who, s.total, best);
+  showDialog(t('gameOverTitle'), t('finalScore', who, s.total, best), Boolean(overUndo));
 }
 
 function endGame() {
-  hsRecorded = true;
-  const s = game.score();
-  const best = Math.max(Number(store.get(HS_KEY) || 0), s.total);
-  store.set(HS_KEY, String(best));
-  const name = (store.get(NAME_KEY) || '').trim();
-  const who = name ? `${name}: ` : '';
-  showDialog(t('gameOverTitle'), t('finalScore', who, s.total, best));
+  notifyGameOver();
   render();
 }
 
-function showDialog(title, body) {
+function undoGameOver() {
+  if (!game.over || !overUndo) return;
+  const u = overUndo;
+  overUndo = null;
+  if (u.kind === 'lock' && game.locked.has(u.color)) game.unmarkLock(u.color);
+  else if (u.kind === 'closed' && game.closed.has(u.color)) game.toggleClosed(u.color);
+  else if (u.kind === 'penalty' && game.penalties > 0) game.removePenalty();
+  Object.assign(turn, u.turn);
+  seenOver = false;
+  notice = t('moveUndone');
+  overlay.hidden = true;
+  render();
+}
+
+function showDialog(title, body, showUndo = false) {
   dialogTitle.textContent = title;
   dialogBody.textContent = body;
+  dialogUndo.hidden = !showUndo;
   overlay.hidden = false;
 }
 
@@ -440,7 +483,8 @@ function newGame() {
   game = new Game();
   turn = new Turn();
   game.strict = mode === 'dice';
-  hsRecorded = false;
+  overUndo = null;
+  seenOver = false;
   notice = null;
   overlay.hidden = true;
   render();
@@ -489,6 +533,7 @@ langBtn.addEventListener('click', () => {
   render();
 });
 dialogOk.addEventListener('click', () => { overlay.hidden = true; });
+dialogUndo.addEventListener('click', undoGameOver);
 dialogNew.addEventListener('click', newGame);
 
 nameInput.value = store.get(NAME_KEY) || '';
