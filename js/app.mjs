@@ -332,7 +332,7 @@ function onCellClick(color, value, el) {
     return;
   }
   if (turn.phase === 'colored' && turn.crossColored(game, color, value)) {
-    render();
+    endTurn();
     return;
   }
   shake(el);

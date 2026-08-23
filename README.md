@@ -7,7 +7,7 @@ Play it at: https://SalimSama.github.io/qwixx/
 ## Modes
 
 - **Paper** (default): a scoresheet with no dice UI — play with real dice and mark the sheet by tapping. Tap a number to cross it; only the rightmost cross of a row can be removed again, so an accidental tap never breaks the left-to-right order. Tap a penalty box to add or remove it, and keep playing past the end condition like a paper sheet (a status hint reports the final score, recorded in the highscore once).
-- **Dice**: the app rolls the dice for you and guides the white and colored actions, with one penalty box marked automatically when nothing is crossed.
+- **Dice**: the app rolls the dice for you and guides the white and colored actions, with one penalty box marked automatically when nothing is crossed. The turn ends automatically once both actions are used or skipped.
 
 The mode and the optional player name (top-left) are remembered in `localStorage`. Switching modes keeps your sheet; an in-progress dice turn is discarded. The interface language (English/German) is switched with the button in the top bar and is remembered too.
 
