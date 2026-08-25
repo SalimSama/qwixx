@@ -76,6 +76,11 @@ body {
   margin-bottom: 10px;
 }
 
+.actions {
+  display: flex;
+  gap: 8px;
+}
+
 .status {
   flex: 1;
   background: #fff;
@@ -453,8 +458,9 @@ body {
     gap: 6px;
   }
 
-  .status {
-    flex-basis: 100%;
+  .controlbar .actions {
+    flex: 1;
+    gap: 6px;
   }
 
   .controlbar .btn {
@@ -561,7 +567,7 @@ body {
   .wrapper {
     display: grid;
     grid-template-columns: minmax(0, 1fr) 250px;
-    grid-template-rows: auto minmax(0, 1fr) auto auto;
+    grid-template-rows: auto minmax(0, 1fr) auto;
     column-gap: 12px;
     max-width: none;
   }
@@ -571,7 +577,7 @@ body {
   }
 
   #board {
-    grid-area: 2 / 1 / 5 / 2;
+    grid-area: 2 / 1 / 3 / 2;
   }
 
   .controlbar {
@@ -586,19 +592,24 @@ body {
     min-height: 56px;
   }
 
-  .controlbar .btn {
+  .controlbar .actions {
+    display: flex;
+    gap: 8px;
+  }
+
+  .controlbar .actions .btn {
+    flex: 1;
     padding: 12px 10px;
     font-size: 16px;
   }
 
   .dices {
-    grid-area: 3 / 2 / 4 / 3;
-    display: grid;
-    grid-template-columns: repeat(2, 44px);
+    grid-area: 3 / 1 / 4 / 2;
+    display: flex;
     gap: 6px;
     justify-content: center;
-    align-self: center;
-    width: auto;
+    align-items: center;
+    width: 100%;
     margin: 8px 0;
   }
 
@@ -608,7 +619,7 @@ body {
   }
 
   .footer {
-    grid-area: 4 / 2 / 5 / 3;
+    grid-area: 3 / 2 / 4 / 3;
     justify-content: center;
     margin-top: auto;
   }
